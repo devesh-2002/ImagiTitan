@@ -3,6 +3,7 @@ import React, { useState, ChangeEvent } from 'react';
 
 const Home: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     setInputText(event.target.value);
@@ -16,9 +17,10 @@ const Home: React.FC = () => {
       },
       body: JSON.stringify({ prompt: inputText }),
     })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
+      .then((response) => response.blob()) // Convert response to Blob
+      .then((blob) => {
+        const imageUrl = URL.createObjectURL(blob); // Create blob URL
+        setImageSrc(imageUrl); // Set image URL to state
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -45,6 +47,11 @@ const Home: React.FC = () => {
           </button>
         </div>
       </div>
+      {imageSrc && (
+        <div className='flex justify-center mt-8'>
+          <img src={imageSrc} alt='Generated Image' className='max-w-md' />
+        </div>
+      )}
     </div>
   );
 }

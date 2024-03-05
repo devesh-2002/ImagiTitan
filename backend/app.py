@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify
 import base64
+from flask import Flask, request, jsonify, send_file
 import io
 import json
 import logging
@@ -10,7 +10,8 @@ from flask_cors import CORS
 from botocore.exceptions import ClientError
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Enable CORS for all routes
+
 class ImageError(Exception):
     "Custom exception for errors returned by Amazon Titan Image Generator G1"
 
@@ -36,7 +37,7 @@ def generate_image(model_id, body):
 
     base64_image = response_body.get("images")[0]
     base64_bytes = base64_image.encode('ascii')
-    image_bytes = base64.b64decode(base64_bytes)
+    image_bytes = io.BytesIO(base64.b64decode(base64_bytes))
 
     finish_reason = response_body.get("error")
 
@@ -71,9 +72,9 @@ def generate_image_route():
         })
 
         image_bytes = generate_image(model_id=model_id, body=body)
-        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        return jsonify({"image": image_base64})
+        # Return image as binary data
+        return send_file(image_bytes, mimetype='image/jpeg')
 
     except ClientError as err:
         message = err.response["Error"]["Message"]
