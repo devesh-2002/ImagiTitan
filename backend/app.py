@@ -1,23 +1,24 @@
+from flask import Flask, request, jsonify
 import base64
 import io
 import json
 import logging
 import boto3
 from PIL import Image
+from flask_cors import CORS
 
 from botocore.exceptions import ClientError
 
-
+app = Flask(__name__)
+CORS(app)
 class ImageError(Exception):
     "Custom exception for errors returned by Amazon Titan Image Generator G1"
 
     def __init__(self, message):
         self.message = message
 
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
 
 def generate_image(model_id, body):
     logger.info(
@@ -47,48 +48,40 @@ def generate_image(model_id, body):
 
     return image_bytes
 
-
-def main():
-    logging.basicConfig(level=logging.INFO,
-                        format="%(levelname)s: %(message)s")
-
-    model_id = 'amazon.titan-image-generator-v1'
-
-    prompt = """A photograph of a cup of coffee from the side."""
-
-    body = json.dumps({
-        "taskType": "TEXT_IMAGE",
-        "textToImageParams": {
-            "text": prompt
-        },
-        "imageGenerationConfig": {
-            "numberOfImages": 1,
-            "height": 1024,
-            "width": 1024,
-            "cfgScale": 8.0,
-            "seed": 0
-        }
-    })
-
+@app.route('/generate-image', methods=['POST'])
+def generate_image_route():
     try:
-        image_bytes = generate_image(model_id=model_id,
-                                     body=body)
-        image = Image.open(io.BytesIO(image_bytes))
-        image.show()
+        model_id = 'amazon.titan-image-generator-v1'
+
+        data = request.json
+        prompt = data["prompt"]
+
+        body = json.dumps({
+            "taskType": "TEXT_IMAGE",
+            "textToImageParams": {
+                "text": prompt
+            },
+            "imageGenerationConfig": {
+                "numberOfImages": 1,
+                "height": 1024,
+                "width": 1024,
+                "cfgScale": 8.0,
+                "seed": 0
+            }
+        })
+
+        image_bytes = generate_image(model_id=model_id, body=body)
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+        return jsonify({"image": image_base64})
 
     except ClientError as err:
         message = err.response["Error"]["Message"]
         logger.error("A client error occurred: %s", message)
-        print("A client error occured: " +
-              format(message))
+        return jsonify({"error": f"A client error occurred: {message}"}), 500
     except ImageError as err:
         logger.error(err.message)
-        print(err.message)
-
-    else:
-        print(
-            f"Finished generating image with Amazon Titan Image Generator G1 model {model_id}.")
-
+        return jsonify({"error": err.message}), 500
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)
