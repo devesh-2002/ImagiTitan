@@ -4,10 +4,11 @@ Generate Images using Amazon Titan Image Generator G1 Model.
 
 ## Tech Stack
 1. AWS Bedrock
-2. Amazon Titan Model
-3. Libraries : Flask, boto3
-4. Next.js
-5. TailwindCSS
+2. Docker
+3. Amazon Titan Model
+4. Libraries : Flask, boto3
+5. Next.js
+6. TailwindCSS
 
 ## Running the project
 1. Fork and Clone the repository.
