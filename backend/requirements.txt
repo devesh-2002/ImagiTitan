@@ -3,3 +3,4 @@ awscli
 Pillow
 Flask
 flask-cors
+gunicorn
